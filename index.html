@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>সততা ফিড হাউজ — Dashboard</title>
+
+  <!-- style -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- SheetJS for Excel export (works offline if you download library locally; CDN used here) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div id="app" class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" role="navigation">
+      <div class="brand">
+        <img id="shopLogo" src="" alt="" class="logo hidden">
+        <div>
+          <h2 id="shopName">সততা ফিড হাউজ</h2>
+          <div class="small muted" id="userRoleBadge">Guest</div>
+        </div>
+      </div>
+
+      <nav class="menu" aria-label="Main menu">
+        <button data-show="dashboard" class="menu-btn active">Dashboard</button>
+        <button data-show="products" class="menu-btn">Products / স্টক</button>
+        <button data-show="sales" class="menu-btn">Sell / বিক্রি</button>
+        <button data-show="customers" class="menu-btn">Customers / বকেয়া</button>
+        <button data-show="reports" class="menu-btn">Reports / রিপোর্ট</button>
+        <button data-show="users" class="menu-btn">Users</button>
+        <button data-show="backup" class="menu-btn">Backup / Import</button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="small muted">Low stock threshold (kg)</div>
+        <div class="row">
+          <input id="globalThreshold" type="number" placeholder="e.g. 10">
+          <button id="saveThresholdBtn" class="btn small">Save</button>
+        </div>
+        <div id="lowList" class="small muted" style="margin-top:10px"></div>
+        <div style="margin-top:12px">
+          <div id="authArea" class="auth">
+            <button id="loginOpen" class="btn small">Login</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="left">
+          <h3 id="pageTitle">Dashboard</h3>
+        </div>
+        <div class="right">
+          <div id="currentUser" class="user">Guest</div>
+          <button id="logoutBtn" class="btn secondary hidden">Logout</button>
+        </div>
+      </header>
+
+      <!-- CONTENT -->
+      <section class="content">
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="page">
+          <div class="grid stats">
+            <div class="card stat">
+              <div class="muted">Total Products</div>
+              <div id="statCount">0</div>
+            </div>
+            <div class="card stat">
+              <div class="muted">Total Stock (kg)</div>
+              <div id="statStock">0</div>
+            </div>
+            <div class="card stat">
+              <div class="muted">Today's Sales</div>
+              <div id="statToday">৳0</div>
+            </div>
+            <div class="card stat">
+              <div class="muted">Total Due</div>
+              <div id="statDue">৳0</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>Quick Sell & Invoice</h4>
+            <div class="form-grid">
+              <div>
+                <label>Product</label>
+                <select id="quickProduct"></select>
+              </div>
+              <div>
+                <label>Customer</label>
+                <select id="quickCustomer"></select>
+              </div>
+              <div><label>Qty (kg)</label><input id="quickQty" type="number" min="0"></div>
+              <div>
+                <label>Payment</label>
+                <select id="quickPaid"><option value="paid">Paid</option><option value="due">Due</option></select>
+              </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="btn" id="quickSellBtn">Sell & Print</button>
+              <button class="btn secondary" id="addSampleBtn">Sample Data</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRODUCTS -->
+        <div id="products" class="page hidden">
+          <div class="card">
+            <h4>Add Product</h4>
+            <div class="form-grid">
+              <div><label>Name</label><input id="p_name" placeholder="Product name"></div>
+              <div><label>Company</label>
+                <select id="p_company"></select>
+              </div>
+              <div><label>Cost Price (৳/kg)</label><input id="p_cost" type="number"></div>
+              <div><label>Sell Price (৳/kg)</label><input id="p_price" type="number"></div>
+              <div><label>Stock (kg)</label><input id="p_stock" type="number"></div>
+              <div><label>Low threshold</label><input id="p_threshold" type="number"></div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <button class="btn" id="addProductBtn">Add Product</button>
+              <button class="btn secondary" id="exportProdCSV">Export CSV</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>Products List</h4>
+            <input id="filterCompany" placeholder="Filter by company (Kazi/Nahar/Paragon...)">
+            <div class="table-wrap">
+              <table id="productsTable">
+                <thead><tr><th>নাম</th><th>কোম্পানি</th><th>স্টক(kg)</th><th>৳/kg</th><th>থ্রেশহোল্ড</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SALES -->
+        <div id="sales" class="page hidden">
+          <div class="card">
+            <h4>Record Sale</h4>
+            <div class="form-grid">
+              <div><label>Product</label><select id="saleProduct"></select></div>
+              <div><label>Customer</label><select id="saleCustomer"></select></div>
+              <div><label>Qty (kg)</label><input id="saleQty" type="number"></div>
+              <div><label>Paid?</label><select id="salePaid"><option value="paid">Paid</option><option value="due">Due</option></select></div>
+              <div><label>Date</label><input id="saleDate" type="date"></div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <button class="btn" id="recordSaleBtn">Record Sale</button>
+              <button class="btn secondary" id="showSalesListBtn">View Sales</button>
+            </div>
+          </div>
+
+          <div class="card" id="salesListCard" style="margin-top:12px">
+            <h4>Sales Records</h4>
+            <div class="row">
+              <input id="searchSale" placeholder="Search product/customer">
+              <button class="btn small" id="exportSalesCSV">Export CSV</button>
+            </div>
+            <div class="table-wrap">
+              <table id="salesTable">
+                <thead><tr><th>Date</th><th>Product</th><th>Customer</th><th>Qty</th><th>Total(৳)</th><th>Paid</th><th>Profit</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- CUSTOMERS -->
+        <div id="customers" class="page hidden">
+          <div class="card">
+            <h4>Add Customer</h4>
+            <div class="form-grid">
+              <div><label>Name</label><input id="c_name"></div>
+              <div><label>Phone</label><input id="c_phone"></div>
+              <div><label>Opening Due (৳)</label><input id="c_due" type="number" value="0"></div>
+            </div>
+            <div class="row" style="margin-top:8px">
+              <button class="btn" id="addCustomerBtn">Add Customer</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>Customers & Dues</h4>
+            <div class="table-wrap">
+              <table id="customersTable">
+                <thead><tr><th>Name</th><th>Phone</th><th>Due (৳)</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- REPORTS -->
+        <div id="reports" class="page hidden">
+          <div class="card">
+            <h4>Daily Report</h4>
+            <div class="row">
+              <input id="r_date" type="date">
+              <button class="btn" id="genDaily">Generate</button>
+              <button class="btn secondary" id="printDaily">Print</button>
+              <button class="btn" id="exportDailyXLSX">Download Excel</button>
+            </div>
+            <div id="dailyReportArea" style="margin-top:10px"></div>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <h4>Monthly Report</h4>
+            <div class="row">
+              <input id="r_month" type="month">
+              <button class="btn" id="genMonthly">Generate</button>
+              <button class="btn secondary" id="printMonthly">Print</button>
+              <button class="btn" id="exportMonthlyXLSX">Download Excel</button>
+            </div>
+            <div id="monthlyReportArea" style="margin-top:10px"></div>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <h4>Profit & Loss</h4>
+            <div class="row">
+              <input id="pl_from" type="date">
+              <input id="pl_to" type="date">
+              <button class="btn" id="genPL">Generate</button>
+              <button class="btn" id="exportPLXLSX">Download Excel</button>
+            </div>
+            <div id="plArea" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <!-- USERS -->
+        <div id="users" class="page hidden">
+          <div class="card">
+            <h4>Login</h4>
+            <div class="form-grid">
+              <div><input id="u_email" placeholder="email" value="owner@shop"></div>
+              <div><input id="u_pass" placeholder="password" value="owner123" type="password"></div>
+              <div>
+                <select id="u_role">
+                  <option value="owner">Owner</option>
+                  <option value="staff">Staff</option>
+                </select>
+              </div>
+              <div><button class="btn" id="loginBtn">Login</button></div>
+            </div>
+
+            <hr>
+            <h4>Create User</h4>
+            <div class="form-grid">
+              <div><input id="new_email" placeholder="email"></div>
+              <div><input id="new_pass" placeholder="password" type="password"></div>
+              <div><select id="new_role"><option value="owner">Owner</option><option value="staff">Staff</option></select></div>
+              <div><button class="btn secondary" id="createUserBtn">Create</button></div>
+            </div>
+            <div id="usersList" style="margin-top:8px"></div>
+          </div>
+        </div>
+
+        <!-- BACKUP -->
+        <div id="backup" class="page hidden">
+          <div class="card">
+            <h4>Export / Import</h4>
+            <div class="row">
+              <button class="btn" id="exportBtn">Export JSON</button>
+              <button class="btn secondary" id="downloadSample">Download Sample</button>
+              <input id="importFileHidden" type="file" style="display:none">
+              <button class="btn" id="importBtn">Import JSON File</button>
+            </div>
+            <div style="margin-top:10px" class="small muted">Import merges products/customers/sales and avoids duplicate users.</div>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- Hidden area for printing invoice -->
+  <div id="printArea" class="hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
